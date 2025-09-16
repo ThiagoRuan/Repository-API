@@ -1,5 +1,6 @@
 package br.ufpb.dcx.dsc.repositorios.services;
 
+import br.ufpb.dcx.dsc.repositorios.exception.NotFoundException;
 import br.ufpb.dcx.dsc.repositorios.models.Organizacao;
 import br.ufpb.dcx.dsc.repositorios.models.Repositorio;
 import br.ufpb.dcx.dsc.repositorios.repository.OrganizacaoRepository;
@@ -17,8 +18,8 @@ public class RepositorioService {
         this.repositorioRepository=repositorioRepository;
         this.organizacaoRepository = organizacaoRepository;
     }
-    public Repositorio getRepositorio(Long id){
-        return repositorioRepository.getReferenceById(id);
+    public Repositorio getRepositorio(Long id) {
+        return repositorioRepository.findById(id).orElseThrow(() -> new NotFoundException("Repositório "+id+" não encontrado."));
     }
 
     public List<Repositorio> listRepositorios() {
@@ -27,26 +28,28 @@ public class RepositorioService {
 
     public Repositorio saveRepositorio(Repositorio r, Long orgId) {
         Optional<Organizacao> oOpt = organizacaoRepository.findById(orgId);
-        if(oOpt.isPresent()){
+        if(oOpt.isPresent()) {
             r.setOrganizacao(oOpt.get());
             return repositorioRepository.save(r);
         }
-        return null;
+        throw new NotFoundException("Organização "+orgId+" não encontrada.");
 
     }
 
     public void deleteRepositorio(Long id) {
-        repositorioRepository.deleteById(id);
+        if(!repositorioRepository.existsById(id)) {
+            throw new NotFoundException("Repositório "+id+" não encontrado.");
+        }
     }
 
     public Repositorio updateRepositorio(Long id, Repositorio rUpdated) {
         Optional<Repositorio> r = repositorioRepository.findById(id);
-        if(r.isPresent()){
+        if(r.isPresent()) {
             Repositorio toUpdate = r.get();
             toUpdate.setIsPrivate(rUpdated.getIsPrivate());
             toUpdate.setNome(rUpdated.getNome());
-            repositorioRepository.save(toUpdate);
+            return repositorioRepository.save(toUpdate);
         }
-        return null;
+        throw new NotFoundException("Repositório "+id+" não encontrado.");
     }
 }

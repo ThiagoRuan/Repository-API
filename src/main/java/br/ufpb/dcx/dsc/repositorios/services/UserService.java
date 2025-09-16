@@ -4,6 +4,7 @@ import br.ufpb.dcx.dsc.repositorios.models.Photo;
 import br.ufpb.dcx.dsc.repositorios.models.User;
 import br.ufpb.dcx.dsc.repositorios.repository.PhotoRepository;
 import br.ufpb.dcx.dsc.repositorios.repository.UserRepository;
+import br.ufpb.dcx.dsc.repositorios.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -16,7 +17,7 @@ public class UserService {
     private UserRepository userRepository;
     private PhotoRepository photoRepository;
 
-    public UserService( UserRepository userRepository, PhotoRepository photoRepository){
+    public UserService( UserRepository userRepository, PhotoRepository photoRepository) {
         this.userRepository = userRepository;
         this.photoRepository = photoRepository;
     }
@@ -24,14 +25,16 @@ public class UserService {
     public List<User> listUsers() {
         return userRepository.findAll();
     }
+
     public User getUser(Long userId) {
 
-        if(userId != null)
-            return userRepository.getReferenceById(userId);
-        return null;
+        if(userId == null) {
+            throw new IllegalArgumentException("O ID do usuário não pode ser nulo.");
+        }
+        return userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Usuário "+userId+" não encontrado."));
     }
 
-    public User createUser(User user){
+    public User createUser(User user) {
 
         Photo photo = new Photo("www.exemplo.com/foto.png");
         photoRepository.save(photo);
@@ -41,13 +44,13 @@ public class UserService {
 
     public User updateUser(Long userId, User u) {
         Optional<User> userOpt = userRepository.findById(userId);
-        if(userOpt.isPresent()){
+        if(userOpt.isPresent()) {
             User user = userOpt.get();
             user.setEmail(u.getEmail());
             user.setNome(u.getNome());
             return userRepository.save(user);
         }
-        return null;
+        throw new NotFoundException("Usuário "+userId+" não encontrado.");
     }
 
     public void deleteUser(Long userId) {

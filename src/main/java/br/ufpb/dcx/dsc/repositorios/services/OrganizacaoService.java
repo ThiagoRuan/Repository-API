@@ -1,5 +1,6 @@
 package br.ufpb.dcx.dsc.repositorios.services;
 
+import br.ufpb.dcx.dsc.repositorios.exception.NotFoundException;
 import br.ufpb.dcx.dsc.repositorios.models.Photo;
 import br.ufpb.dcx.dsc.repositorios.models.Organizacao;
 import br.ufpb.dcx.dsc.repositorios.models.User;
@@ -24,36 +25,37 @@ public class OrganizacaoService {
         return organizacaoRepository.findAll();
     }
     public Organizacao getOrganizacao(Long orgId) {
-        if(orgId != null)
-            return organizacaoRepository.getReferenceById(orgId);
-        return null;
+        if(orgId == null) {
+            throw new IllegalArgumentException("O ID da Organização não pode ser nulo.");
+        }
+        return organizacaoRepository.findById(orgId).orElseThrow(() -> new NotFoundException("Organização "+orgId+" não encontrada."));
     }
 
     public Organizacao createOrganizacao(Organizacao org, Long userId){
         Optional<User> uOpt = userRepository.findById(userId);
-        if(uOpt.isPresent()){
+        if(uOpt.isPresent()) {
             Organizacao o = organizacaoRepository.save(org);
             User u = uOpt.get();
             u.getOrganizacaos().add(org);
             userRepository.save(u);
             return o;
         }
-        return null;
+        throw new NotFoundException("Usuário "+userId+" não encontrado.");
     }
 
     public Organizacao updateOrganizacao(Long orgId, Organizacao o) {
         Optional<Organizacao> orgOpt = organizacaoRepository.findById(orgId);
-        if(orgOpt.isPresent()){
+        if(orgOpt.isPresent()) {
             Organizacao org = orgOpt.get();
             org.setNome(o.getNome());
             return organizacaoRepository.save(org);
         }
-        return null;
+        throw new NotFoundException("Organização "+orgId+" não encontrada.");
     }
 
     public void deleteOrganizacao(Long orgId) {
         Optional<Organizacao> oOpt = organizacaoRepository.findById(orgId);
-        if(oOpt.isPresent()){
+        if(oOpt.isPresent()) {
             Organizacao o = oOpt.get();
 
             o.getUsers().stream().forEach( user -> {
@@ -63,5 +65,6 @@ public class OrganizacaoService {
             o.getUsers().removeAll(o.getUsers());
             organizacaoRepository.delete(o);
         }
+        throw new NotFoundException("Organização "+orgId+" não encontrada.");
     }
 }
